@@ -1,0 +1,60 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/node:latest
+    steps:
+      - checkout
+      #- restore_cache:
+       #   key: -v3-{{ checksum "requirements/dev.txt" }}
+      - run:
+          name: Install Dependencies
+          command: . build/install.sh
+      #- save_cache:
+         # key: -v3-{{ checksum "requirements/dev.txt" }}
+       #   paths:
+        #    - "venv"
+      - run:
+          name: Create Scratch Org
+          command: . build/create-scratch-org.sh
+      - run:
+          name: Validate Components & Run Tests
+          command: . build/test.sh
+      - store_test_results:
+          path: test-results
+  deploy-sandbox:
+    docker:
+    - image: circleci/node:latest
+    steps:
+      - checkout
+      #- restore_cache:
+       #   key: -v3-{{ checksum "requirements/dev.txt" }}
+      - run:
+          name: Install Dependencies
+          command: . build/install.sh
+      #- save_cache:
+       #   key: -v3-{{ checksum "requirements/dev.txt" }}
+        #  paths:
+         #   - "venv"
+      - run:
+          name: Login to Sandbox
+          command: . build/setup-sandbox.sh
+      - run:
+          name: Deploy to Sandbox for verification
+          command: . build/deploy-sandbox.sh
+      - store_test_results:
+          path: test-results
+workflows:
+  version: 2
+  validate:
+    jobs:
+      - build:
+          filters:
+            branches:
+              ignore:
+                - master
+      - deploy-sandbox:
+          filters:
+            branches:
+              only:
+                - Develop
